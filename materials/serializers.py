@@ -5,10 +5,7 @@ from .models import Course, Lesson
 class CourseSerializer(serializers.ModelSerializer):
     """Сериализатор для модели Course"""
 
-    lesson_count = serializers.IntegerField(
-        source='lessons.count',
-        read_only=True
-    )
+    lesson_count = serializers.SerializerMethodField()
 
     lessons = serializers.PrimaryKeyRelatedField(
         many=True,
@@ -28,6 +25,10 @@ class CourseSerializer(serializers.ModelSerializer):
             'lessons'
         ]
         read_only_fields = ['created_at', 'updated_at']
+
+    def get_lesson_count(self, obj):
+        """Возвращает общее количество уроков в курсе"""
+        return obj.lessons.count()
 
 
 class LessonSerializer(serializers.ModelSerializer):
