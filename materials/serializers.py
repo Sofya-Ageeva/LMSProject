@@ -4,7 +4,7 @@ from .models import Course, Lesson
 
 class LessonSerializer(serializers.ModelSerializer):
     """Базовый сериализатор для модели Lesson"""
-
+    owner_email = serializers.CharField(source='owner.email', read_only=True)
     class Meta:
         model = Lesson
         fields = [
@@ -14,6 +14,8 @@ class LessonSerializer(serializers.ModelSerializer):
             'description',
             'preview',
             'video_link',
+            'owner',
+            'owner_email',
             'created_at',
             'updated_at'
         ]
@@ -24,8 +26,8 @@ class CourseSerializer(serializers.ModelSerializer):
     """Сериализатор для модели Course"""
 
     lesson_count = serializers.SerializerMethodField()
-
     lessons = LessonSerializer(many=True, read_only=True)
+    owner_email = serializers.CharField(source='owner.email', read_only=True)
 
     class Meta:
         model = Course
@@ -34,6 +36,8 @@ class CourseSerializer(serializers.ModelSerializer):
             'name',
             'preview',
             'description',
+            'owner',
+            'owner_email',
             'created_at',
             'updated_at',
             'lesson_count',

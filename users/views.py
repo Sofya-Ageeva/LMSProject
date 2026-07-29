@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import User, Payment
 from .serializers import (
-    UserSerializer, PaymentSerializer, UserWithPaymentsSerializer, UserRegistrationSerializer)
+    UserSerializer, PaymentSerializer, UserWithPaymentsSerializer, UserRegistrationSerializer, PrivateUserSerializer,
+    PublicUserSerializer)
 from .filters import PaymentFilter
 from django.db import models
 from .permissions import IsModerator, IsOwnerOrAdmin, IsOwnerOrReadOnly
@@ -38,7 +39,10 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         """Получение деталей о пользователе"""
         if self.action == 'retrieve':
-            return UserWithPaymentsSerializer
+            user = self.get_object()
+            if user == self.request.user:
+                return PrivateUserSerializer
+            return PublicUserSerializer
         return UserSerializer
 
     def get_queryset(self):

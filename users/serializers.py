@@ -99,3 +99,30 @@ class UserWithPaymentsSerializer(UserSerializer):
         return obj.payments.aggregate(
             total=models.Sum('amount')
         )['total'] or 0
+
+
+class PublicUserSerializer(serializers.ModelSerializer):
+    """Сериализатор для публичного просмотра профиля (без личной информации)"""
+
+    payments = PaymentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'email',
+            'first_name',
+            'last_name'
+            'phone',
+            'city',
+            'avatar',
+            'date_joined'
+        ]
+        read_only_fields = ['date_joined']
+
+
+class PrivateUserSerializer(UserWithPaymentsSerializer):
+    """Сериализатор для просмотра своего профиля (с полной информацией)"""
+
+    class Meta(UserWithPaymentsSerializer.Meta):
+        fields = UserWithPaymentsSerializer.Meta.fields + ['last_name']
