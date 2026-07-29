@@ -1,6 +1,37 @@
 from rest_framework import serializers
 from .models import User, Payment
+from django.contrib.auth import get_user_model
 from django.db import models
+
+User = get_user_model()
+
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    """Сериализатор для регистрации пользователя"""
+
+    password = serializers.CharField(write_only=True, min_length=8)
+
+    class Meta:
+        model = User
+        fields = ['email', 'password', 'first_name', 'last_name', 'phone', 'city']
+
+    def create(self, validated_data):
+        """Создание пользователя с хешированием пароля"""
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            password=validated_data['password'],
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
+            phone=validated_data.get('phone', ''),
+            city=validated_data.get('city', '')
+        )
+        return user
+
+    def validate_email(self, value):
+        """Проверка, что email уникален"""
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Пользователь с таким email уже существует")
+        return value
 
 
 class UserSerializer(serializers.ModelSerializer):
