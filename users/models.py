@@ -1,10 +1,12 @@
 from django.db import models
+from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 
 class CustomUserManager(BaseUserManager):
-    """Менеджер пользователей - отвечает за создание обычных пользователей и суперпользователей"""
+    """Менеджер пользователей"""
 
     def create_user(self, email, password=None, **extra_fields):
         """Создание обычного пользователя"""
@@ -112,3 +114,107 @@ class User(AbstractBaseUser, PermissionsMixin):
     def get_short_name(self):
         """Краткое имя"""
         return self.first_name or self.email
+
+
+class Payment(models.Model):
+    """Модель платежа пользователя за курс или урок"""
+
+    # Способ оплаты
+    class PaymentMethod(models.TextChoices):
+        CASH = 'cash', 'Наличные'
+        TRANSFER = 'transfer', 'Перевод на счет'
+
+    # Связь с пользователем
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='payments',
+        verbose_name='Пользователь'
+    )
+
+    # Дата оплаты
+    payment_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата оплаты'
+    )
+
+    # Оплаченный курс
+    paid_course = models.ForeignKey(
+        'materials.Course',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payments',
+        verbose_name='Оплаченный курс'
+    )
+
+    # Оплаченный урок
+    paid_lesson = models.ForeignKey(
+        'materials.Lesson',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payments',
+        verbose_name='Оплаченный урок'
+    )
+
+    # Сумма оплаты
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name='Сумма оплаты'
+    )
+
+    # Способ оплаты
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.CASH,
+        verbose_name='Способ оплаты'
+    )
+
+    class Meta:
+        verbose_name = 'Платеж'
+        verbose_name_plural = 'Платежи'
+        ordering = ['-payment_date']
+
+    def __str__(self):
+        return f"Платеж {self.user.email} - {self.amount} руб."
+
+    def clean(self):
+        """Проверка оплаты"""
+        if not self.paid_course and not self.paid_lesson:
+            raise ValidationError('Должен быть оплачен либо курс, либо урок')
+        if self.paid_course and self.paid_lesson:
+            raise ValidationError('Нельзя оплатить одновременно и курс, и урок')
+
+
+class Subscription(models.Model):
+    """Модель подписки пользователя на обновления курса"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='subscriptions',
+        verbose_name='Пользователь'
+    )
+
+    course = models.ForeignKey(
+        'materials.Course',
+        on_delete=models.CASCADE,
+        related_name='subscriptions',
+        verbose_name='Курс'
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата подписки'
+    )
+
+    class Meta:
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
+        unique_together = ('user', 'course')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.email} → {self.course.name}"
