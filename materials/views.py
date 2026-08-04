@@ -5,6 +5,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from .models import Course, Lesson
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from .serializers import CourseSerializer, LessonSerializer, LessonDetailSerializer
+from .paginators import CoursePagination, LessonPagination
 from users.permissions import IsModerator, IsOwner, IsOwnerOrModerator, IsOwnerOrReadOnly, IsOwnerOrAdmin
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -13,6 +14,7 @@ class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = CoursePagination
 
     def get_permissions(self):
         """Разные права для разных действий"""
@@ -88,6 +90,7 @@ class LessonListCreateView(ListCreateAPIView):
 
     queryset = Lesson.objects.select_related('course').all()
     permission_classes = [IsAuthenticated]
+    pagination_class = LessonPagination
 
     def get_permissions(self):
         """Разные права для разных методов"""
@@ -134,7 +137,7 @@ class LessonListCreateView(ListCreateAPIView):
 class LessonRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     """Generic-класс для работы с одним уроком"""
 
-    queryset = Lesson.objects.select_related('course').all()
+    queryset = Lesson.objects.select_related('course', 'owner').all()
     permission_classes = [IsAuthenticated]
 
     def get_permissions(self):
