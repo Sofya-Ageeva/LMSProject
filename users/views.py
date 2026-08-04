@@ -1,11 +1,14 @@
 from rest_framework import viewsets, filters, status, generics
 from rest_framework.decorators import action
+from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import User, Payment
+from materials.models import Course
+from .models import User, Payment, Subscription
 from .serializers import (
-    UserSerializer, PaymentSerializer, UserWithPaymentsSerializer, UserRegistrationSerializer, PrivateUserSerializer,
+    UserSerializer, PaymentSerializer, SubscriptionSerializer, UserRegistrationSerializer, PrivateUserSerializer,
     PublicUserSerializer)
 from .filters import PaymentFilter
 from django.db import models
@@ -94,3 +97,72 @@ class PaymentViewSet(viewsets.ModelViewSet):
         if user.is_superuser or user.is_staff:
             return super().get_queryset()
         return super().get_queryset().filter(user=user)
+
+
+class SubscriptionView(APIView):
+    """
+    Управление подпиской на курс
+    POST: создает или удаляет подписку
+    GET: проверяет статус подписки
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """Создание или удаление подписки"""
+        user = request.user
+        course_id = request.data.get('course_id')
+
+        if not course_id:
+            return Response(
+                {'error': 'Необходимо указать course_id'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        course = get_object_or_404(Course, id=course_id)
+
+        subscription = Subscription.objects.filter(
+            user=user,
+            course=course
+        ).first()
+
+        if subscription:
+            subscription.delete()
+            message = 'Подписка удалена'
+            is_subscribed = False
+        else:
+            subscription = Subscription.objects.create(
+                user=user,
+                course=course
+            )
+            message = 'Подписка добавлена'
+            is_subscribed = True
+
+        return Response({
+            'message': message,
+            'is_subscribed': is_subscribed,
+            'course_id': course.id,
+            'course_name': course.name
+        }, status=status.HTTP_200_OK)
+
+    def get(self, request):
+        """Проверка статуса подписки"""
+        user = request.user
+        course_id = request.query_params.get('course_id')
+
+        if not course_id:
+            return Response(
+                {'error': 'Необходимо указать course_id'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        course = get_object_or_404(Course, id=course_id)
+        is_subscribed = Subscription.objects.filter(
+            user=user,
+            course=course
+        ).exists()
+
+        return Response({
+            'is_subscribed': is_subscribed,
+            'course_id': course.id,
+            'course_name': course.name
+        })

@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -186,3 +187,34 @@ class Payment(models.Model):
             raise ValidationError('Должен быть оплачен либо курс, либо урок')
         if self.paid_course and self.paid_lesson:
             raise ValidationError('Нельзя оплатить одновременно и курс, и урок')
+
+
+class Subscription(models.Model):
+    """Модель подписки пользователя на обновления курса"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='subscriptions',
+        verbose_name='Пользователь'
+    )
+
+    course = models.ForeignKey(
+        'materials.Course',
+        on_delete=models.CASCADE,
+        related_name='subscriptions',
+        verbose_name='Курс'
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата подписки'
+    )
+
+    class Meta:
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
+        unique_together = ('user', 'course')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.email} → {self.course.name}"
