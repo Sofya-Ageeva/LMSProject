@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 
 class Course(models.Model):
@@ -8,7 +9,6 @@ class Course(models.Model):
         max_length=200,
         verbose_name='Название курса'
     )
-
     preview = models.ImageField(
         upload_to='course_previews/',
         blank=True,
@@ -19,6 +19,15 @@ class Course(models.Model):
     description = models.TextField(
         blank=True,
         verbose_name='Описание курса'
+    )
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='courses',
+        verbose_name='Владелец курса',
+        null=True,
+        blank=True
     )
 
     created_at = models.DateTimeField(
@@ -70,6 +79,15 @@ class Lesson(models.Model):
     video_link = models.URLField(
         blank=True,
         verbose_name='Ссылка на видео'
+    )
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='lessons',
+        verbose_name='Владелец урока',
+        null=True,
+        blank=True
     )
 
     created_at = models.DateTimeField(
