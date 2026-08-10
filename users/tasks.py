@@ -90,3 +90,18 @@ def send_course_update_notifications(course_id, course_name):
         )
 
     return f'Отправлено {len(emails)} уведомлений для курса "{course_name}"'
+
+
+@shared_task
+def send_cron_email():
+    """Тестовая задача, которая выполняется по расписанию"""
+    from django.core.mail import send_mail
+
+    send_mail(
+        'Тестовое письмо от Celery Beat',
+        'Это тестовое письмо, отправленное по расписанию!',
+        'noreply@lms.com',
+        ['admin@example.com'],
+        fail_silently=False,
+    )
+    return 'Тестовое письмо отправлено!'

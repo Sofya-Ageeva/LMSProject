@@ -192,7 +192,14 @@ CELERY_BEAT_SCHEDULE = {
     'block-inactive-users': {
         'task': 'users.tasks.block_inactive_users',
         'schedule': 86400,
+        'options': {
+            'expires': 3600,
+        }
     },
+    'send-cron-email': {
+        'task': 'users.tasks.send_cron_email',
+        'schedule': 3600,
+    }
 }
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
