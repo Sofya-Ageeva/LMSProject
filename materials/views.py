@@ -7,6 +7,7 @@ from .models import Course, Lesson
 from .serializers import CourseSerializer, LessonSerializer, LessonDetailSerializer
 from .paginators import CoursePagination, LessonPagination
 from users.permissions import IsModerator, IsOwner, IsOwnerOrModerator, IsOwnerOrReadOnly, IsOwnerOrAdmin
+from users.tasks import send_course_update_notifications
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -173,6 +174,17 @@ class CourseViewSet(viewsets.ModelViewSet):
             return Course.objects.all()
 
         return Course.objects.filter(owner=user)
+
+    def perform_update(self, serializer):
+        """При обновлении курса отправляем уведомления подписчикам"""
+        course = self.get_object()
+
+        serializer.save()
+
+        send_course_update_notifications.delay(
+            course_id=course.id,
+            course_name=course.name
+        )
 
 
 class LessonListCreateView(ListCreateAPIView):
