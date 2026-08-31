@@ -218,3 +218,6 @@ __marimo__/
 # Игнорировать файл в корне репозитория
 mylog.txt.env
 .env
+
+.DS_Store
+Thumbs.db
